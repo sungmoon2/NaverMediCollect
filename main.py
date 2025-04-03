@@ -59,11 +59,10 @@ def display_progress(running_event, extractor):
 
 
 def main():
-    """메인 실행 함수"""
     args = parse_arguments()
     
-    # 로깅 설정
-    log_level = logging.DEBUG if args.verbose else logging.INFO
+    # 로깅 설정 (디버깅을 위해 DEBUG로 변경)
+    log_level = logging.DEBUG  # args.verbose 대신 직접 DEBUG로 설정
     logger = setup_logger(log_level)
     logger.info(f"NaverMediCollect 시작 (시간: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')})")
     
@@ -86,6 +85,7 @@ def main():
         
         # 컴포넌트 초기화
         keyword_manager = KeywordManager()
+        print(f"로드된 키워드: {keyword_manager.todo_keywords}")  # 디버깅 출력
         api_handler = NaverApiHandler()
         data_extractor = DataExtractor()
         html_reporter = HTMLReporter()

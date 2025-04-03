@@ -294,22 +294,33 @@ class FileManager:
         Returns:
             list: 행 목록 (실패 시 빈 리스트)
         """
+        print(f"파일 경로: {file_path}")  # 디버깅 출력
+        print(f"파일 존재 여부: {os.path.exists(file_path)}")  # 디버깅 출력
+        
         if not os.path.exists(file_path):
             self.logger.warning(f"파일이 존재하지 않습니다: {file_path}")
             return []
         
         try:
-            lines = []
             with open(file_path, 'r', encoding=encoding) as f:
+                # 전체 파일 내용 출력
+                file_contents = f.read()
+                print(f"파일 전체 내용: '{file_contents}'")
+                
+                # 파일 커서를 다시 처음으로 이동
+                f.seek(0)
+                
+                lines = []
                 for line in f:
                     if strip:
                         line = line.strip()
                     
                     if line:  # 빈 행 제외
                         lines.append(line)
-            
-            return lines
-            
+                
+                print(f"읽은 라인 수: {len(lines)}")  # 디버깅 출력
+                return lines
+                
         except Exception as e:
             self.logger.error(f"파일 행 읽기 오류 ({file_path}): {e}")
             return []

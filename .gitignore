@@ -2,7 +2,9 @@
 *.log
 
 # Data directories
-data/
+# data/
+repots/
+collected/
 logs/
 
 # Report files

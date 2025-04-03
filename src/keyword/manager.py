@@ -58,23 +58,28 @@ class KeywordManager:
     
     def _load_keywords(self):
         """키워드 파일에서 키워드 로드"""
-        # 처리할 키워드 로드
-        if os.path.exists(self.todo_path):
-            with open(self.todo_path, 'r', encoding='utf-8') as f:
-                for line in f:
-                    keyword = line.strip()
-                    if keyword:
-                        self.todo_keywords.add(keyword)
+        # 파일 매니저 생성
+        file_manager = FileManager()
         
-        # 완료된 키워드 로드
-        if os.path.exists(self.done_path):
-            with open(self.done_path, 'r', encoding='utf-8') as f:
-                for line in f:
-                    keyword = line.strip()
-                    if keyword:
-                        self.done_keywords.add(keyword)
+        # 키워드 파일 존재 여부 확인 및 필요시 생성
+        if not os.path.exists(self.todo_path):
+            os.makedirs(os.path.dirname(self.todo_path), exist_ok=True)
+            with open(self.todo_path, 'w', encoding='utf-8') as f:
+                # 기본 키워드 추가
+                default_keywords = [
+                    "타이레놀", "소화제", "혈압약", "동아제약", 
+                    "감기약", "해열제", "진통제", "항생제"
+                ]
+                f.write("\n".join(default_keywords))
+            self.logger.info(f"기본 키워드 파일 생성: {self.todo_path}")
         
-        self.logger.info(f"키워드 로드 완료: 처리할 키워드 {len(self.todo_keywords)}개, 완료된 키워드 {len(self.done_keywords)}개")
+        # 키워드 로드
+        keywords = file_manager.read_lines(self.todo_path)
+        
+        # 키워드 집합 설정
+        self.todo_keywords = set(keywords)
+        
+        self.logger.info(f"키워드 로드 완료: 처리할 키워드 {len(self.todo_keywords)}개")
     
     def get_next_keyword(self) -> Optional[str]:
         """

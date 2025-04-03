@@ -57,18 +57,10 @@ class NaverApiHandler:
     def search_keyword(self, keyword, display=100, start=1):
         """
         키워드를 네이버 검색 API를 통해 검색하고 결과를 반환합니다.
-        
-        Args:
-            keyword (str): 검색할 키워드
-            display (int): 한 번에 표시할 검색 결과 수 (최대 100)
-            start (int): 검색 시작 위치
-            
-        Returns:
-            list: 의약품 데이터 목록 (없으면 빈 리스트)
         """
         self.logger.info(f"키워드 '{keyword}' 검색 중...")
         
-        # API 요청 제한 준수 (초당 10회 이하)
+        # API 요청 제한 준수
         self._respect_rate_limit()
         
         # 검색어 인코딩
@@ -76,7 +68,8 @@ class NaverApiHandler:
         params = {
             "query": encoded_keyword,
             "display": display,
-            "start": start
+            "start": start,
+            "sort": "sim"  # 유사도순 정렬
         }
         
         # API 요청
@@ -98,6 +91,10 @@ class NaverApiHandler:
         try:
             result_json = response.json()
             
+            # 전체 검색 결과 로깅
+            total_items = len(result_json.get('items', []))
+            self.logger.info(f"검색 결과 전체 항목 수: {total_items}")
+            
             if not result_json.get('items'):
                 self.logger.warning(f"검색 결과 없음: {keyword}")
                 return []
@@ -111,7 +108,7 @@ class NaverApiHandler:
                     if medicine_data:
                         medicines.append(medicine_data)
             
-            self.logger.info(f"'{keyword}' 검색 결과 {len(medicines)}건 찾음")
+            self.logger.info(f"'{keyword}' 검색 결과 중 의약품 {len(medicines)}건 찾음")
             return medicines
             
         except Exception as e:
@@ -131,40 +128,54 @@ class NaverApiHandler:
     def _is_medicine_page(self, item):
         """
         검색 결과 항목이 의약품 페이지인지 확인
-        
-        Args:
-            item (dict): 검색 결과 항목
-            
-        Returns:
-            bool: 의약품 페이지 여부
         """
         # 제목에서 의약품 페이지 패턴 확인
         title = item.get('title', '')
-        
-        # HTML 태그 제거
-        clean_title = re.sub('<[^<]+?>', '', title).strip()
-        
-        # 의약품 페이지 패턴
-        medicine_patterns = [
-            r'정$', r'캡슐$', r'연고$', r'주사$', r'시럽$', r'액$', r'산$', 
-            r'주$', r'정제$', r'과립$', r'크림$', r'로션$', r'패치$', r'스프레이$'
-        ]
-        
-        for pattern in medicine_patterns:
-            if re.search(pattern, clean_title):
-                return True
-        
-        # 설명(description)에서 확인
         description = item.get('description', '')
+        link = item.get('link', '')
+
+        # HTML 태그 및 특수 문자 제거
+        clean_title = re.sub('<[^<]+?>', '', title).strip()
+        clean_description = re.sub('<[^<]+?>', '', description).strip()
+
+        # 디버깅을 위한 로깅
+        self.logger.debug(f"검색 항목 분석:")
+        self.logger.debug(f"제목: {clean_title}")
+        self.logger.debug(f"설명: {clean_description}")
+        self.logger.debug(f"링크: {link}")
+        
+        # 의약품 관련 키워드 및 패턴 확장 (정규식 사용)
+        medicine_name_patterns = [
+            r'\b(타이레놀|아세트아미노펜|이부프로펜|아스피린)\b',  # 특정 약 이름
+            r'\b(캡슐|정|주사|연고|시럽|액|패치|크림|스프레이)\b',  # 약 형태
+            r'\b(제약|의약품|처방약|치료제)\b'  # 제약 관련 용어
+        ]
         
         medicine_keywords = [
-            '전문의약품', '일반의약품', '소화성궤양용제', '항생제', '진통제',
-            '효능효과', '용법용량', '사용상주의사항', '분류', '성상', '제형'
+            '의약품', '약', '처방', '복용', '용법', '용량', 
+            '효능', '효과', '부작용', '성분', '투여', '치료'
         ]
-        
-        for keyword in medicine_keywords:
-            if keyword in description:
+
+        # 제목 및 설명에서 의약품 관련 패턴 검색
+        for pattern in medicine_name_patterns:
+            if re.search(pattern, clean_title, re.IGNORECASE) or \
+            re.search(pattern, clean_description, re.IGNORECASE):
+                self.logger.debug(f"패턴 매칭 성공: {pattern}")
                 return True
+        
+        # 키워드 확인
+        for keyword in medicine_keywords:
+            if keyword in clean_title or keyword in clean_description:
+                self.logger.debug(f"키워드 매칭 성공: {keyword}")
+                return True
+        
+        # 링크 패턴 확인
+        if re.search(r'terms\.naver\.com', link):
+            self.logger.debug("terms.naver.com 링크 매칭")
+            return True
+        
+        # 디버깅을 위해 로깅
+        self.logger.debug("의약품 페이지로 판단되지 않음")
         
         return False
     
