@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>의약품 데이터 추출 보고서 ({{ start_idx }}-{{ end_idx }})</title>
+    <style>
+        body {
+            font-family: 'Malgun Gothic', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1, h2, h3 {
+            color: #2c3e50;
+        }
+        .report-header {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 30px;
+            border-left: 5px solid #4b6cb7;
+        }
+        .medicine-item {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+        .medicine-header {
+            background-color: #f1f8ff;
+            padding: 10px;
+            margin: -15px -15px 15px -15px;
+            border-bottom: 1px solid #ddd;
+            border-radius: 5px 5px 0 0;
+        }
+        .field-name {
+            font-weight: bold;
+            color: #4b6cb7;
+        }
+        .success {
+            color: #28a745;
+        }
+        .warning {
+            color: #ffc107;
+        }
+        .error {
+            color: #dc3545;
+        }
+        .stats {
+            background-color: #e9ecef;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <div class="report-header">
+        <h1>의약품 데이터 추출 보고서</h1>
+        <p>생성 시간: {{ generation_time }}</p>
+        <p>의약품 범위: {{ start_idx }} - {{ end_idx }}번</p>
+    </div>
+
+    <div class="stats">
+        <h2>추출 통계</h2>
+        <p>총 의약품 수: {{ total_medicines }}</p>
+        <p>성공 추출: <span class="success">{{ successful_extractions }}</span></p>
+        <p>부분 추출: <span class="warning">{{ partial_extractions }}</span></p>
+        <p>실패 추출: <span class="error">{{ failed_extractions }}</span></p>
+    </div>
+
+    <h2>의약품 추출 목록</h2>
+    
+    {% for medicine in medicines %}
+    <div class="medicine-item">
+        <div class="medicine-header">
+            <h3>{{ medicine.name }}</h3>
+            <p>
+                추출 상태: 
+                {% if medicine.extraction_status == 'success' %}
+                <span class="success">성공</span>
+                {% elif medicine.extraction_status == 'partial' %}
+                <span class="warning">부분</span>
+                {% else %}
+                <span class="error">실패</span>
+                {% endif %}
+            </p>
+        </div>
+        
+        <table>
+            <tr>
+                <th>필드</th>
+                <th>값</th>
+                <th>상태</th>
+            </tr>
+            {% for field in medicine.fields %}
+            <tr>
+                <td class="field-name">{{ field.name }}</td>
+                <td>
+                    {% if field.value %}
+                    {{ field.value|truncate(100) }}
+                    {% else %}
+                    -
+                    {% endif %}
+                </td>
+                <td>
+                    {% if field.status == 'success' %}
+                    <span class="success">추출</span>
+                    {% elif field.status == 'error' %}
+                    <span class="error">실패</span>
+                    {% else %}
+                    <span class="warning">누락</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+    {% endfor %}
+
+    <div>
+        <p><strong>보고서 ID:</strong> {{ report_id }}</p>
+    </div>
+</body>
+</html>
